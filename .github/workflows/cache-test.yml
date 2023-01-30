@@ -1,0 +1,42 @@
+name: using of file
+
+on: push
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: checkout to directory
+      uses: actions/checkout@v3
+
+    - name: make directory to store key id of previous stored cache
+      id: id-val
+      run: |
+        mkdir -p cache-id/
+        echo "7890" >> cache-id/id.txt
+        cat cache-id/id.txt
+    
+    - name: key of stored cache 
+      id: id
+      run: |
+        echo '::set-output name=id::$(cat id.txt)'
+      
+    - name: checking
+      run: |
+        echo '${{ steps.id.outputs.id  }}'
+
+    - name: Restore cached Primes
+      id: cache-primes-restore
+      uses: actions/cache/restore@v3
+      with:
+        key: ${{ steps.id.outputs.id }}
+        path: .
+    
+    - name: Save Primes
+      id: cache-primes-save
+      uses: actions/cache/save@v3
+      with:
+         key: ${{ runner.os }}-${{ github.run_id }}
+         path: .
+       

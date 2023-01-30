@@ -1,0 +1,23 @@
+name: cleanup packages
+on: 
+  workflow_dispatch:
+  
+  push:
+    brances:
+     - master
+    tags:
+     - v[0-9]+.[0-9]+
+     
+jobs:
+  job_1:
+    name: cleanup
+    runs-on: ubuntu-latest
+    steps:
+      - name: cleanup
+        uses: bots-house/ghcr-delete-image-action@v1.0.0
+        with: 
+          owner: '${{ github.repository_owner }}'
+          name: hello_api
+          token: ${{ secrets.GHCR_TOKEN }}
+          tag: 1.1
+      

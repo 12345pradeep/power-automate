@@ -1,0 +1,32 @@
+name: Call a reusable workflow and use its outputs
+
+on:
+  push:
+    branches:
+      - master
+      - reusable-workflow-test
+  pull_request:
+    branches:
+      - master
+      - reusable-workflow-test
+    tags:
+      - v1.*
+      - v2.*
+  workflow_dispatch:
+
+jobs:
+  job1:
+    uses: 12345pradeep/DevOps_training/.github/workflows/using-output-reusable-workflow2.yml@master
+    with:
+      kuber: "kubernates"
+    secrets:
+      NAMESPACE: "XYZ"
+
+
+  job2:
+    runs-on: ubuntu-latest
+    needs: job1
+    steps:
+      - run: echo ${{ needs.job1.outputs.firstword }} ${{ needs.job1.outputs.secondword }}
+      - run: echo ${{ needs.job1.outputs.firstword }} ${{ needs.job1.outputs.secondword }}
+

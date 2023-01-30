@@ -1,0 +1,208 @@
+name: learn-github-actions
+run-name: ${{ github.actor }} is learning GitHub Actions
+on:
+
+  workflow_dispatch:
+
+  push:
+
+    # branches:
+    #  - master
+
+    # paths:
+    #  - '**.js'    #this would run anytime when we push javascript file to repo
+    #  - 'sub-project/**'            ##This example runs anytime the push event includes a file in the sub-project directory or its subdirectories, 
+    #                                 ##unless the file is in the sub-project/docs directory. For example, a push that changed sub-project/index.js or 
+    #                                 ##sub-project/src/index.js will trigger a workflow run, but a push changing only sub-project/docs/readme.md will not.
+    #  - '!sub-project/docs/**'
+
+    tags:
+    - v1.*.*
+
+  pull_request:
+
+    types:
+
+    - opened
+
+    branches:
+
+    - 'master/**'
+    - '!releases/**-alpha'
+
+    tags:
+    - v2
+    - v1.*
+    - 'v*.*.*'
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  my-first-job:
+    runs-on: ubuntu-latest
+    steps:
+
+    - name: checkout
+      uses: actions/checkout@v3
+
+
+    - name: Dump GitHub context
+      env:
+        GITHUB_CONTEXT: ${{ toJson(github) }}
+      run: echo "$GITHUB_CONTEXT"
+      if: runner.os != 'Windows'
+
+    # wont work(we can use ${{github.ref_name}})
+    # - name: Show GitHub ref
+    #   run: |
+    #     echo "TAG=${GITHUB_REF# */*/}" >> $GITHUB_ENV     # or echo "TAG=${GITHUB_REF:10}" >> $GITHUB_ENV
+    #     echo "$GITHUB_REF"
+    #   if: runner.os != 'Windows'
+
+
+    - name: Login to Docker Hub
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKER_HUB_USERNAME }}
+        password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+
+
+    - name: Build and push
+      uses: docker/build-push-action@v3
+      with:
+        context: .
+        file: ./Dockerfile
+        push: true
+        tags: ${{ secrets.DOCKER_HUB_USERNAME }}/devops_training:${{ github.ref_name}}
+
+  test:
+    needs: my-first-job
+    runs-on: ubuntu-latest
+    steps:
+    - run: |
+        echo "working properly"
+
+
+
+
+
+
+
+      # below:how to use reusable workflow 
+
+      # Using inputs and secrets in a reusable workflow
+      # You can define inputs and secrets, which can be passed from the caller workflow and then used within the called workflow. There are three stages to using an input or a secret in a reusable workflow.
+
+      # In the reusable workflow, use the inputs and secrets keywords to define inputs or secrets that will be passed from a caller workflow.
+
+      # on:
+      #   workflow_call:
+      #     inputs:
+      #       config-path:
+      #         required: true
+      #         type: string
+      #     secrets:
+      #       envPAT:
+      #         required: true
+      # For details of the syntax for defining inputs and secrets, see on.workflow_call.inputs and on.workflow_call.secrets.
+
+      # In the reusable workflow, reference the input or secret that you defined in the on key in the previous step.
+
+      # Note: If the secrets are inherited by using secrets: inherit in the calling workflow, you can reference them even if they are not explicitly defined in the on key. For more information, see "Workflow syntax for GitHub Actions."
+
+      # jobs:
+      #   reusable_workflow_job:
+      #     runs-on: ubuntu-latest
+      #     environment: production
+      #     steps:
+      #     - uses: actions/labeler@v4
+      #       with:
+      #         repo-token: ${{ secrets.envPAT }}
+      #         configuration-path: ${{ inputs.config-path }}
+      # In the example above, envPAT is an environment secret that's been added to the production environment. This environment is therefore referenced within the job.
+
+      # Note: Environment secrets are encrypted strings that are stored in an environment that you've defined for a repository. Environment secrets are only available to workflow jobs that reference the appropriate environment. For more information, see "Using environments for deployment."
+
+      # Pass the input or secret from the caller workflow.
+
+      # To pass named inputs to a called workflow, use the with keyword in a job. Use the secrets keyword to pass named secrets. For inputs, the data type of the input value must match the type specified in the called workflow (either boolean, number, or string).
+
+      # jobs:
+      #   call-workflow-passing-data:
+      #     uses: octo-org/example-repo/.github/workflows/reusable-workflow.yml@main
+      #     with:
+      #       config-path: .github/labeler.yml
+      #     secrets:
+      #       envPAT: ${{ secrets.envPAT }}
+      # Workflows that call reusable workflows in the same organization or enterprise can use the inherit keyword to implicitly pass the secrets.
+
+      # jobs:
+      #   call-workflow-passing-data:
+      #     uses: octo-org/example-repo/.github/workflows/reusable-workflow.yml@main
+      #     with:
+      #       config-path: .github/labeler.yml
+      #     secrets: inherit
+
+
+
+
+
+
+  # - name: Build the Docker image
+  #         run: docker build . --file Dockerfile --tag $hello-api:1.0
+
+
+
+#below one is for context
+
+# name: Reusable deploy workflow
+# on:
+#   workflow_call:
+#     inputs:
+#       build_id:
+#         required: true
+#         type: number
+#       deploy_target:                         
+#         required: true
+#         type: string
+#       perform_deploy:
+#         required: true
+#         type: boolean
+
+# jobs:
+#   deploy:
+#     runs-on: ubuntu-latest
+#     if: ${{ inputs.perform_deploy }}
+#     steps:
+#       - name: Deploy build to target
+#         run: deploy --build ${{ inputs.build_id }} --target ${{ inputs.deploy_target }}
+
+
+
+
+# Creating dependent jobs
+# By default, the jobs in your workflow all run in parallel at the same time. If you have a job that must only run after another job has completed, you can use the needs keyword to create this dependency. If one of the jobs fails, all dependent jobs are skipped; however, if you need the jobs to continue, you can define this using the if conditional statement.
+
+# In this example, the setup, build, and test jobs run in series, with build and test being dependent on the successful completion of the job that precedes them:
+
+# jobs:
+#   setup:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - run: ./setup_server.sh
+#   build:
+#     needs: setup
+#     runs-on: ubuntu-latest
+#     steps:
+#       - run: ./build_server.sh
+# test:
+#   needs: build
+#   runs-on: ubuntu-latest
+#   steps:
+#     - run: ./test_server.sh

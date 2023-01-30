@@ -1,0 +1,40 @@
+name: Caching Primes
+
+on: push
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Restore cached Primes
+      id: cache-primes-restore
+      uses: actions/cache/restore@v3
+      with:
+        key: lint-image1
+        path: /var/lib/docker/image/ 
+    
+    - name: Save Primes
+      id: cache-primes-save
+      uses: actions/cache/save@v3
+      with:
+         key: lint-image1
+         path: /var/lib/docker/image/ 
+     
+    - name: Lint Code Base
+      id: lint-output
+      uses: github/super-linter/slim@v4
+      env:
+        VALIDATE_ALL_CODEBASE: false
+        DEFAULT_BRANCH: "master"
+        GITHUB_TOKEN: ${{ secrets.GHCR_TOKEN }}
+        
+    - name: restore-cache
+      run: |
+        echo "${{steps.cache-primes-restore.outputs}}"
+    - name: save-cache  
+      run: |
+        echo "${{ steps.lint-output.outputs.summary }}"
+      

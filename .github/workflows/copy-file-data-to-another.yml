@@ -1,0 +1,38 @@
+name: Package Application with Pyinstaller
+
+on:
+  push:
+    tags:
+    - v[0-9]+.[0-9]+.[0-9]+
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Dump GitHub context
+      env:
+        GITHUB_CONTEXT: ${{ toJson(github) }}
+      run: echo "$GITHUB_CONTEXT"
+
+    - name: GitHub Tag Name example
+      run: |
+        echo "Tag name from GITHUB_REF_NAME: $GITHUB_REF_NAME"
+        echo "Tag name from github.ref_name: ${{  github.ref_name }}"
+
+    - name: version the batfile and exe file
+      run: |
+        mkdir test/install${{  github.ref_name }}.bat
+        mv test/install.bat test/install-${{ github.ref_name }}.bat
+
+    - uses: actions/upload-artifact@v3
+      with:
+        name: atcost-weight-scale
+        path: |
+          dist/v*.exe
+          test/install-v*.bat
+
+
+
+

@@ -1,0 +1,27 @@
+name: Call a reusable workflow
+
+on:
+  pull_request:
+    branches:
+      - master
+  push:
+    branches:
+      - master
+
+jobs:
+  call-workflow:
+    uses: 12345pradeep/devops_training/.github/workflows/reusable-workflow.yml@master
+
+    with:
+      config-path: "abcd"
+    secrets:
+        token: ${{secrets.token}}
+
+
+
+
+
+
+
+
+
